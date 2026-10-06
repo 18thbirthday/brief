@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ein Brief für Kira</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#3b2a1f;
+    --wood-mid:#5a4230;
+    --wood-light:#77593d;
+    --cork:#b9895a;
+    --cork-dark:#8f6339;
+    --paper:#f4ecd8;
+    --envelope:#e9dfc4;
+    --envelope-flap:#ddcfa8;
+    --ink:#2c2620;
+    --ink-soft:#4a3f34;
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:'EB Garamond', serif;
+    overflow-x:hidden;
+    background:var(--wood-dark);
+  }
+
+  /* ---------- PINNWAND ---------- */
+  #board{
+    position:relative;
+    min-height:100svh;
+    width:100%;
+    padding:calc(8vh + env(safe-area-inset-top,0px)) 6vw calc(6vh + env(safe-area-inset-bottom,0px));
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,0.05), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.15), transparent 45%),
+      repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 2px, transparent 6px),
+      linear-gradient(160deg, var(--cork), var(--cork-dark));
+    border:14px solid var(--wood-dark);
+    box-shadow:inset 0 0 80px rgba(0,0,0,0.45);
+  }
+  #board.hidden{ display:none; }
+
+  .board-title{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size:clamp(1.8rem, 5vw, 3rem);
+    color:#3a2b18;
+    text-shadow:0 1px 0 rgba(255,255,255,0.25);
+    text-align:left;
+    margin:0 0 5vh;
+  }
+
+  .board-grid{
+    display:flex;
+    flex-wrap:wrap;
+    align-content:flex-start;
+    gap:7vw 6vw;
+  }
+
+  .envelope-wrap{
+    position:relative;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:14px 0 0;
+    -webkit-tap-highlight-color:transparent;
+    flex:0 0 auto;
+  }
+
+  .envelope-wrap.placeholder{
+    cursor:pointer;
+    opacity:0.32;
+  }
+  .envelope-wrap.placeholder:hover{ opacity:0.45; }
+  .envelope-wrap.placeholder .envelope{ transform:rotate(var(--tilt, -3deg)); }
+  .envelope-wrap.placeholder .pin{ opacity:0.7; }
+
+  .teaser{
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translate(-50%, 8px);
+    white-space:nowrap;
+    background:rgba(30,20,12,0.88);
+    color:#f0e6cf;
+    font-family:'Caveat', cursive;
+    font-size:1.1rem;
+    padding:6px 14px;
+    border-radius:14px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:10;
+  }
+  .teaser.show{
+    opacity:1;
+    transform:translate(-50%, -4px);
+  }
+
+  .pin{
+    position:absolute;
+    top:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #e35b4f, #9c231a 75%);
+    box-shadow:0 3px 5px rgba(0,0,0,0.5);
+    z-index:3;
+  }
+
+  .envelope{
+    position:relative;
+    display:block;
+    width:min(46vw, 190px);
+    aspect-ratio:3 / 2;
+    background:var(--envelope);
+    box-shadow:0 18px 30px -10px rgba(0,0,0,0.55), 0 4px 8px rgba(0,0,0,0.3);
+    transform:rotate(-3deg);
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .envelope-wrap:hover .envelope,
+  .envelope-wrap:focus-visible .envelope{
+    transform:rotate(-1deg) translateY(-4px);
+    box-shadow:0 24px 36px -10px rgba(0,0,0,0.6), 0 6px 10px rgba(0,0,0,0.35);
+  }
+
+  .envelope::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:0;
+    border-left:calc(min(46vw, 190px) / 2) solid transparent;
+    border-right:calc(min(46vw, 190px) / 2) solid transparent;
+    border-top:calc(min(46vw, 190px) * 0.36) solid var(--envelope-flap);
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+  }
+
+  .envelope::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(to bottom right, transparent 49.6%, rgba(0,0,0,0.08) 50%, transparent 50.4%),
+      linear-gradient(to bottom left, transparent 49.6%, rgba(0,0,0,0.08) 50%, transparent 50.4%);
+  }
+
+  .seal-small{
+    position:absolute;
+    top:36%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:15%;
+    aspect-ratio:1;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #a83a2f, #6e1f18 70%);
+    box-shadow:0 3px 6px rgba(0,0,0,0.4);
+    z-index:2;
+  }
+
+  .board-hint{
+    font-family:'Caveat', cursive;
+    font-size:clamp(1rem, 2.6vw, 1.3rem);
+    color:#3a2b18;
+    opacity:0.75;
+    margin:0;
+  }
+
+  /* ---------- BRIEF ---------- */
+  #letter-screen, #letter-screen-2{
+    position:relative;
+    min-height:100svh;
+    width:100%;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:calc(6vh + env(safe-area-inset-top,0px)) 5vw calc(6vh + env(safe-area-inset-bottom,0px));
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.05), transparent 60%),
+      repeating-linear-gradient(90deg, var(--wood-mid) 0px, var(--wood-light) 3px, var(--wood-mid) 6px),
+      linear-gradient(160deg, var(--wood-dark), var(--wood-mid) 60%, var(--wood-dark));
+    background-blend-mode:overlay, normal, normal;
+  }
+  #letter-screen.visible, #letter-screen-2.visible{ display:flex; }
+
+  .desk-vignette{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.45) 100%);
+  }
+
+  .back-btn{
+    position:absolute;
+    top:calc(18px + env(safe-area-inset-top,0px));
+    left:18px;
+    z-index:5;
+    font-family:'EB Garamond', serif;
+    font-style:italic;
+    font-size:0.95rem;
+    color:#e9dfc4;
+    background:rgba(0,0,0,0.25);
+    border:1px solid rgba(233,223,196,0.4);
+    border-radius:20px;
+    padding:8px 16px;
+    cursor:pointer;
+  }
+  .back-btn:hover{ background:rgba(0,0,0,0.4); }
+
+  .letter{
+    position:relative;
+    width:min(560px, 100%);
+    background:var(--paper);
+    background-image:
+      linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0)),
+      repeating-linear-gradient(0deg, transparent, transparent 33px, rgba(44,38,32,0.06) 34px);
+    padding:56px 48px 64px;
+    border-radius:2px;
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.05),
+      0 25px 60px -15px rgba(0,0,0,0.65),
+      0 8px 20px -8px rgba(0,0,0,0.5);
+    transform:rotate(-1.2deg);
+    color:var(--ink);
+  }
+
+  .letter::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:2px;
+    box-shadow:inset 0 0 40px rgba(120,100,70,0.18);
+    pointer-events:none;
+  }
+
+  .letter::after{
+    content:"";
+    position:absolute;
+    top:-16px;
+    left:50%;
+    transform:translateX(-50%) rotate(3deg);
+    width:70px;
+    height:26px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.08));
+    border:1px solid rgba(255,255,255,0.3);
+    backdrop-filter:blur(1px);
+  }
+
+  .greeting{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size:2.1rem;
+    margin:0 0 22px;
+    color:var(--ink);
+  }
+
+  .body-text{
+    font-family:'Caveat', cursive;
+    font-size:1.5rem;
+    line-height:1.55;
+    color:var(--ink);
+    margin:0 0 20px;
+    max-width:62ch;
+  }
+
+  .signoff{ margin-top:38px; }
+  .signoff p{
+    font-family:'Caveat', cursive;
+    font-size:1.4rem;
+    margin:0 0 4px;
+    color:var(--ink-soft);
+  }
+  .signature{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size:2.4rem;
+    color:var(--ink);
+    margin-top:6px;
+  }
+
+  .seal{
+    position:absolute;
+    bottom:-18px;
+    right:36px;
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #a83a2f, #6e1f18 70%);
+    box-shadow:0 6px 12px rgba(0,0,0,0.5), inset 0 0 8px rgba(0,0,0,0.4);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform:rotate(-8deg);
+  }
+  .seal span{
+    font-family:'EB Garamond', serif;
+    font-style:italic;
+    color:#e8c9a0;
+    font-size:1.1rem;
+  }
+
+  @media (max-width:480px){
+    .letter{padding:40px 26px 56px;}
+    .body-text, .greeting{font-size:1.35rem;}
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .letter{animation:settle 0.9s ease-out;}
+  }
+  @keyframes settle{
+    from{opacity:0; transform:rotate(-1.2deg) translateY(14px);}
+    to{opacity:1; transform:rotate(-1.2deg) translateY(0);}
+  }
+
+  /* ---------- MEHRSEITIGER BRIEF ---------- */
+  .letter-page{ display:none; }
+  .letter-page.active{ display:block; }
+
+  .page-nav{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:30px;
+  }
+  .page-nav.start{ justify-content:flex-start; }
+
+  .page-btn{
+    font-family:'EB Garamond', serif;
+    font-style:italic;
+    font-size:1rem;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    border-bottom:1px solid var(--ink-soft);
+    padding:2px 0;
+    cursor:pointer;
+  }
+  .page-btn:hover{ color:var(--ink); border-color:var(--ink); }
+
+  .page-dots{
+    text-align:center;
+    margin-top:10px;
+    font-family:'EB Garamond', serif;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    opacity:0.7;
+  }
+
+  .audio-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:26px;
+  }
+  .play-btn{
+    flex:0 0 auto;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+    background:radial-gradient(circle at 35% 30%, #a83a2f, #6e1f18 70%);
+    box-shadow:0 3px 6px rgba(0,0,0,0.4);
+    color:#f0e6cf;
+    font-size:0.95rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease;
+  }
+  .play-btn:hover{ transform:scale(1.06); }
+  .play-btn:active{ transform:scale(0.96); }
+
+  .audio-label{
+    font-family:'Caveat', cursive;
+    font-size:1.25rem;
+    color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+  <section id="board">
+    <p class="board-title">brett der worte</p>
+    <div class="board-grid">
+      <div>
+        <button class="envelope-wrap" id="openEnvelope" aria-label="Brief an Kira öffnen">
+          <span class="pin"></span>
+          <span class="envelope">
+            <span class="seal-small"></span>
+          </span>
+        </button>
+      </div>
+
+      <span class="envelope-wrap placeholder" style="--tilt:2deg;">
+        <span class="teaser">folgt bald …</span>
+        <span class="pin"></span>
+        <span class="envelope"><span class="seal-small"></span></span>
+      </span>
+      <span class="envelope-wrap placeholder" style="--tilt:-2deg;">
+        <span class="teaser">noch nicht da …</span>
+        <span class="pin"></span>
+        <span class="envelope"><span class="seal-small"></span></span>
+      </span>
+      <span class="envelope-wrap placeholder" style="--tilt:4deg;">
+        <span class="teaser">demnächst …</span>
+        <span class="pin"></span>
+        <span class="envelope"><span class="seal-small"></span></span>
+      </span>
+      <span class="envelope-wrap placeholder" style="--tilt:-3deg;">
+        <span class="teaser">bald mehr …</span>
+        <span class="pin"></span>
+        <span class="envelope"><span class="seal-small"></span></span>
+      </span>
+      <div>
+        <button class="envelope-wrap" id="openEnvelope2" aria-label="Zweiten Brief öffnen" style="--tilt:1deg;">
+          <span class="pin"></span>
+          <span class="envelope" style="transform:rotate(1deg);">
+            <span class="seal-small"></span>
+          </span>
+        </button>
+        <p class="board-hint">etwas zu lange worte</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="letter-screen">
+    <div class="desk-vignette"></div>
+    <button class="back-btn back-to-board">← zurück zur Pinnwand</button>
+    <main class="letter">
+      <p class="greeting">liebe kira,</p>
+      <p class="body-text">
+        ich habe dir versprochen dies zu schreiben, mir fällt es schwer , denn ich muss 
+        sagen habe es noch nie wirklich gemacht. was ich mit diesem brief dir sagen möchte ist, dass ich wirklich sehr dankbar bin.
+      </p>
+      <p class="body-text">
+        Es gibt Tage, an denen ich verstehe wie sehr nervig ich sein kann und natürlich weiß ich auch das du es nicht gerne sagst, wofür ich dir sehr dankbar bin.
+        Es gibt Momente, an denen es mir schwer fällt dich deuten zu können wie heute, ob es gerade nur deine Laune ist oder du im Momemt wirklich genervt sein kannst
+        Ich schätze du wirst wohl wissen was ich meine falls dich dieser Brief heute erreicht, sofern du nicht früh schlafen bist. Vorallem war ich heute wohl kleines 	bisschen sehr 	slow?
+	Ich habe jetzt viel teils unnötiges von mir gegeben, aber was ich wirklich sagen möchte ich bin sehr dankbar. Ich vermute mal es zeigt sich wohl alleine durch diesen 	Brief und viele andere Dinge.
+      </p>
+      <p class="body-text">
+        Ich nutze den Brief um meine Gedanken mehr hinterdacht dir mitzuteilen und eventuell vielleicht noch öfters, aber anders... Was sagt denn die Pinnwand?
+      </p>
+      <div class="signoff">
+        <p>In Zuneigung,</p>
+        <p class="signature">a</p>
+      </div>
+      <div class="seal"><span>K</span></div>
+    </main>
+  </section>
+
+  <section id="letter-screen-2">
+    <div class="desk-vignette"></div>
+    <button class="back-btn back-to-board">← zurück zur Pinnwand</button>
+    <main class="letter">
+      <div class="letter-page active" data-page="1">
+        <div class="audio-row">
+          <button class="play-btn" id="lyricsPlayBtn" aria-label="Lyrics-Stelle abspielen">▶</button>
+          <span class="audio-label">lyrics stelle die ich meine</span>
+        </div>
+        <audio id="lyricsAudio" src="lyrics.mp3" preload="none"></audio>
+        <p class="greeting">liebe kira,</p>
+        <p class="body-text">
+          ich habe letztens einen song von mac auf tiktok gehört und ein teil des
+          lyrics war folgender: „Do you want it all if it‘s all mediocre? […] lookin‘ at my dreams, who I wanna be I guess you gotta see it to believe“" und es hat mich sehr zum nachdenken gebracht, dass
+          ich das leben ein bisschen zu ernst nehme, lasse es mich viel zu lange erklären,
+          vielleicht interessiert es dich immerhin kleine bisschen.
+        </p>
+        <p class="body-text">
+          Ich glaube, die größte lücke in meinem leben ist aktuell die distanz zwischen der
+          person, die ich gerade bin, und der person, die ich sein möchte obwohl ich weiß,
+          dass es möglich ist, diese person zu werden. nicht weil ich mit mir unzufrieden wäre, sondern weil ich schon momente hatte, in denen ich gesehen
+          habe, was möglich ist, wenn ich diszipliniert, fokussiert und ein bisschen mehr
+          mache.
+        </p>
+        <div class="page-nav">
+          <button class="page-btn next-page">weiterlesen →</button>
+        </div>
+      </div>
+
+      <div class="letter-page" data-page="2">
+        <p class="body-text">
+          manchmal denke ich, genau das ist es, was mich am meisten frustriert dass ich
+          weiß, ich könnte mehr in mir haben, aber stattdessen sehe ich mich selbst zögern,
+          prokrastinier, abgelenkt bin oder mich damit zufriedengeben, einfach nur
+          die ganze zeit zu chillen. Ich glaube, genau deshalb kann ungenutztes Potenzial für
+          viele menschen schmerzhafter sein als einfaches scheitern. scheitern bedeutet für
+          mich man hat es versucht, aber es hat nicht geklappt. aber allein der gedanke,
+          dass man mehr hätte tun können und es nicht getan hat, ist schätze ich ein ganz anderes gefühl.
+          ich habe wirklich nicht vor perfektion zu streben, sondern nur nicht mein leben damit zu
+          verbringen, mich zu fragen, wer ich hätte sein können, auch wenn ich weiß, dass
+          es ziemlich ungesunde sicht auf das Leben ist und ich es viel mehr
+          genießen sollte.
+        </p>
+        <p class="body-text">
+          Ich glaube, das ist auch einer der gründe, warum ich es manchmal mehr genieße
+          allein zu sein und warum ich teilweise vermeide, irgendwo hinzugehen weil mir
+          der gedanke kommt, das ich wichtigeres machen könnte, obwohl ich zuhause dann nur netflix schaue oder so        </p>
+        <p class="body-text">
+          vermute das schätze ich wohl sehr an dirwie sorgenfrei du jeden moment mit deinen freunden genießt, dinge planst und einfach im augenblick lebst. du schaffst es, dir nicht über alles ständig gedanken zu machen, sondern die Zeit mit den menschen, die dir wichtig sind, wirklich zu genießen. das bewundere ich wirklich richtig sehr an dir kira
+        </p>
+        <div class="signoff">
+          <p>In Wertschätzung,</p>
+          <p class="signature">a</p>
+        </div>
+        <div class="page-nav start">
+          <button class="page-btn prev-page">← zurück</button>
+        </div>
+      </div>
+      <div class="seal"><span>K</span></div>
+    </main>
+  </section>
+
+  <script>
+    const board = document.getElementById('board');
+    const letterScreen = document.getElementById('letter-screen');
+    const letterScreen2 = document.getElementById('letter-screen-2');
+    const openBtn = document.getElementById('openEnvelope');
+    const openBtn2 = document.getElementById('openEnvelope2');
+
+    function openLetter(screen){
+      board.classList.add('hidden');
+      screen.classList.add('visible');
+      window.scrollTo(0,0);
+    }
+    function backToBoard(){
+      letterScreen.classList.remove('visible');
+      letterScreen2.classList.remove('visible');
+      board.classList.remove('hidden');
+      window.scrollTo(0,0);
+    }
+
+    openBtn.addEventListener('click', () => openLetter(letterScreen));
+    openBtn2.addEventListener('click', () => openLetter(letterScreen2));
+
+    document.querySelectorAll('.back-to-board').forEach(btn => {
+      btn.addEventListener('click', backToBoard);
+    });
+
+    // Seiten-Navigation im zweiseitigen Brief
+    const pages = letterScreen2.querySelectorAll('.letter-page');
+    function showPage(n){
+      pages.forEach(p => p.classList.toggle('active', p.dataset.page === String(n)));
+      letterScreen2.querySelector('.letter').scrollTo?.(0,0);
+    }
+    letterScreen2.querySelector('.next-page').addEventListener('click', () => showPage(2));
+    letterScreen2.querySelector('.prev-page').addEventListener('click', () => showPage(1));
+
+    // Lyrics-Audio
+    const lyricsAudio = document.getElementById('lyricsAudio');
+    const lyricsPlayBtn = document.getElementById('lyricsPlayBtn');
+    lyricsPlayBtn.addEventListener('click', () => {
+      if (lyricsAudio.paused) {
+        lyricsAudio.play().catch(() => {});
+      } else {
+        lyricsAudio.pause();
+      }
+    });
+    lyricsAudio.addEventListener('play', () => { lyricsPlayBtn.textContent = '⏸'; });
+    lyricsAudio.addEventListener('pause', () => { lyricsPlayBtn.textContent = '▶'; });
+    lyricsAudio.addEventListener('ended', () => { lyricsPlayBtn.textContent = '▶'; });
+
+    document.querySelectorAll('.envelope-wrap.placeholder').forEach(el => {
+      const teaser = el.querySelector('.teaser');
+      let timeoutId;
+      el.addEventListener('click', () => {
+        teaser.classList.add('show');
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => teaser.classList.remove('show'), 1400);
+      });
+    });
+  </script>
+
+</body>
+</html>
